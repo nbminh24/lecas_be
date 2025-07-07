@@ -12,7 +12,7 @@ namespace be_lecas.Services
         Task<ApiResponse<ReviewDto>> CreateOrderReviewAsync(string orderId, string userId, CreateReviewRequest request);
         Task<ApiResponse<List<OrderTrackingDto>>> GetOrderTrackingAsync(string orderId, string userId);
         Task<ApiResponse<OrderDto?>> UpdateOrderStatusAsync(string orderId, UpdateOrderStatusRequest request);
-        Task<ApiResponse> UpdateOrderInfoAsync(string orderId, string userId, UpdateOrderRequest request);
+        Task<ApiResponse<object>> UpdateOrderInfoAsync(string orderId, string userId, UpdateOrderRequest request);
     }
 }
 

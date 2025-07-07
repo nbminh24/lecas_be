@@ -185,14 +185,14 @@ namespace be_lecas.Controllers
         }
 
         [HttpPut("{id}/update-info")]
-        public async Task<ActionResult<ApiResponse>> UpdateOrderInfo(string id, [FromBody] UpdateOrderRequest request)
+        public async Task<ActionResult<ApiResponse<object>>> UpdateOrderInfo(string id, [FromBody] UpdateOrderRequest request)
         {
             try
             {
                 var userId = User.FindFirst("userId")?.Value;
                 if (string.IsNullOrEmpty(userId))
                 {
-                    return Unauthorized(ApiResponse.ErrorResult("Invalid token"));
+                    return Unauthorized(ApiResponse<object>.ErrorResult("Invalid token"));
                 }
 
                 var result = await _orderService.UpdateOrderInfoAsync(id, userId, request);
@@ -204,7 +204,7 @@ namespace be_lecas.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, ApiResponse.ErrorResult($"Internal server error: {ex.Message}"));
+                return StatusCode(500, ApiResponse<object>.ErrorResult($"Internal server error: {ex.Message}"));
             }
         }
     }
