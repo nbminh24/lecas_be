@@ -17,7 +17,17 @@ using Microsoft.AspNetCore.ResponseCompression;
 var builder = WebApplication.CreateBuilder(args);
 
 // Load configuration from appsettings.json and environment variables
-builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+var appSettingsJson = Environment.GetEnvironmentVariable("APPSETTINGS_JSON");
+if (!string.IsNullOrEmpty(appSettingsJson))
+{
+    var tempFile = Path.GetTempFileName();
+    File.WriteAllText(tempFile, appSettingsJson);
+    builder.Configuration.AddJsonFile(tempFile, optional: false, reloadOnChange: false);
+}
+else
+{
+    builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+}
 builder.Configuration.AddEnvironmentVariables();
 
 // Add services to the container.
