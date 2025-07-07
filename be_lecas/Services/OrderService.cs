@@ -458,15 +458,15 @@ namespace be_lecas.Services
                 var order = await _orderRepository.GetByIdAsync(orderId);
                 if (order == null)
                 {
-                    return ApiResponse.ErrorResult("Order not found");
+                    return ApiResponse<object>.ErrorResult("Order not found");
                 }
                 if (order.UserId != userId)
                 {
-                    return ApiResponse.ErrorResult("Access denied");
+                    return ApiResponse<object>.ErrorResult("Access denied");
                 }
                 if (order.Status != OrderStatus.Pending)
                 {
-                    return ApiResponse.ErrorResult("Order cannot be updated at this stage");
+                    return ApiResponse<object>.ErrorResult("Order cannot be updated at this stage");
                 }
                 // Cập nhật các trường cho phép
                 if (request.ShippingInfo != null)
@@ -486,11 +486,11 @@ namespace be_lecas.Services
                     ChangedAt = DateTime.UtcNow
                 });
                 await _orderRepository.UpdateAsync(order);
-                return ApiResponse.SuccessResult(null, "Order info updated successfully");
+                return ApiResponse<object>.SuccessResult(null, "Order info updated successfully");
             }
             catch (Exception ex)
             {
-                return ApiResponse.ErrorResult($"Failed to update order info: {ex.Message}");
+                return ApiResponse<object>.ErrorResult($"Failed to update order info: {ex.Message}");
             }
         }
     }

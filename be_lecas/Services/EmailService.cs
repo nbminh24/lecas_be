@@ -116,6 +116,13 @@ namespace be_lecas.Services
 
             return await SendEmailAsync(to, subject, body);
         }
+
+        public async Task SendOrderStatusUpdateAsync(string toName, string orderNumber, string status, string message)
+        {
+            // TODO: Gửi email thực tế, ở đây chỉ mock
+            Console.WriteLine($"[EMAIL] To: {toName}, Order: {orderNumber}, Status: {status}, Message: {message}");
+            await Task.CompletedTask;
+        }
     }
 }
 

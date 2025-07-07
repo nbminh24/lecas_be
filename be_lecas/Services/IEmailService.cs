@@ -7,6 +7,7 @@ namespace be_lecas.Services
         Task<bool> SendOrderConfirmationAsync(string to, string orderNumber, decimal total);
         Task<bool> SendPasswordResetAsync(string to, string resetToken);
         Task<bool> SendEmailVerificationAsync(string to, string userName, string verificationToken);
+        Task SendOrderStatusUpdateAsync(string toName, string orderNumber, string status, string message);
     }
 }
 
