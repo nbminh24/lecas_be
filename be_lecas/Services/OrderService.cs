@@ -451,7 +451,7 @@ namespace be_lecas.Services
             }
         }
 
-        public async Task<ApiResponse> UpdateOrderInfoAsync(string orderId, string userId, UpdateOrderRequest request)
+        public async Task<ApiResponse<object>> UpdateOrderInfoAsync(string orderId, string userId, UpdateOrderRequest request)
         {
             try
             {
