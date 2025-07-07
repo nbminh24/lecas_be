@@ -10,5 +10,33 @@ services:
     command: redis-server --appendonly yes
     restart: unless-stopped
 
+  mongodb:
+    image: mongo:7
+    container_name: mongo-lecas
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: lecas
+
+  backend:
+    build:
+      context: ./be_lecas
+      dockerfile: Dockerfile
+    container_name: be_lecas
+    ports:
+      - "5000:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__MongoDB=mongodb://mongodb:27017/lecas
+      - ConnectionStrings__Redis=redis:6379
+    depends_on:
+      - redis
+      - mongodb
+    restart: unless-stopped
+
 volumes:
   redis_data:
+  mongo_data:

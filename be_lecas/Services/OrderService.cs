@@ -13,76 +13,127 @@ namespace be_lecas.Services
         private readonly IProductRepository _productRepository;
         private readonly IEmailService _emailService;
         private readonly IMapper _mapper;
+        private readonly IPromotionRepository _promotionRepository;
 
         public OrderService(
             IOrderRepository orderRepository,
             ICartRepository cartRepository,
             IProductRepository productRepository,
             IEmailService emailService,
-            IMapper mapper)
+            IMapper mapper,
+            IPromotionRepository promotionRepository)
         {
             _orderRepository = orderRepository;
             _cartRepository = cartRepository;
             _productRepository = productRepository;
             _emailService = emailService;
             _mapper = mapper;
+            _promotionRepository = promotionRepository;
         }
 
         public async Task<ApiResponse<OrderDto>> CreateOrderAsync(CreateOrderRequest request)
         {
             try
             {
-                // Validate cart items
-                var cart = await _cartRepository.GetByUserIdAsync(request.UserId);
-                if (cart == null || !cart.Items.Any())
+                if (request.Items == null || !request.Items.Any())
                 {
-                    return ApiResponse<OrderDto>.ErrorResult("Cart is empty");
+                    return ApiResponse<OrderDto>.ErrorResult("No items selected for order");
                 }
 
-                // Create order items from cart
+                // Lấy danh sách promotion đang hoạt động
+                var activePromotions = await _promotionRepository.GetActivePromotionsAsync();
+
+                // Lấy giỏ hàng hiện tại của user (nếu có)
+                var cart = await _cartRepository.GetByUserIdAsync(request.UserId);
                 var orderItems = new List<OrderItem>();
                 decimal subtotal = 0;
+                var cartItemsToRemove = new List<CartItem>();
 
-                foreach (var cartItem in cart.Items)
+                // Bước 1: Kiểm tra tồn kho đồng bộ cho tất cả sản phẩm trước khi trừ kho
+                foreach (var reqItem in request.Items)
                 {
-                    var product = await _productRepository.GetByIdAsync(cartItem.ProductId);
+                    var product = await _productRepository.GetByIdAsync(reqItem.ProductId);
                     if (product == null)
                     {
-                        return ApiResponse<OrderDto>.ErrorResult($"Product {cartItem.ProductId} not found");
+                        return ApiResponse<OrderDto>.ErrorResult($"Product {reqItem.ProductId} not found");
                     }
-
-                    if (!product.InStock || product.StockQuantity < cartItem.Quantity)
+                    if (!product.InStock || product.StockQuantity < reqItem.Quantity)
                     {
                         return ApiResponse<OrderDto>.ErrorResult($"Product {product.Name} is out of stock");
+                    }
+                }
+
+                // Nếu tất cả sản phẩm đều đủ tồn kho, tiến hành trừ kho và tạo order
+                foreach (var reqItem in request.Items)
+                {
+                    var product = await _productRepository.GetByIdAsync(reqItem.ProductId);
+                    decimal price = product.Price;
+                    // Áp dụng promotion nếu có
+                    var promo = activePromotions.FirstOrDefault(p => p.ProductIds.Contains(product.Id));
+                    decimal discount = 0;
+                    if (promo != null)
+                    {
+                        if (promo.DiscountType == "percent")
+                        {
+                            discount = price * promo.DiscountValue / 100m;
+                        }
+                        else if (promo.DiscountType == "amount")
+                        {
+                            discount = promo.DiscountValue;
+                        }
+                        if (discount > price) discount = price;
+                        price -= discount;
                     }
 
                     var orderItem = new OrderItem
                     {
-                        ProductId = cartItem.ProductId,
+                        ProductId = reqItem.ProductId,
                         ProductName = product.Name,
                         Image = product.Images.FirstOrDefault(),
-                        Quantity = cartItem.Quantity,
-                        Size = cartItem.SelectedSize,
-                        Color = cartItem.SelectedColor,
-                        Price = cartItem.Price,
-                        TotalPrice = cartItem.Price * cartItem.Quantity
+                        Quantity = reqItem.Quantity,
+                        Size = reqItem.Size,
+                        Color = reqItem.Color,
+                        Price = price,
+                        TotalPrice = price * reqItem.Quantity
                     };
-
                     orderItems.Add(orderItem);
                     subtotal += orderItem.TotalPrice;
 
-                    // Update product stock
-                    product.StockQuantity -= cartItem.Quantity;
+                    // Trừ tồn kho (đảm bảo đồng bộ)
+                    product.StockQuantity -= reqItem.Quantity;
                     product.InStock = product.StockQuantity > 0;
                     await _productRepository.UpdateAsync(product);
+
+                    // Nếu sản phẩm này có trong giỏ thì đánh dấu để xóa
+                    if (cart != null)
+                    {
+                        var cartItem = cart.Items.FirstOrDefault(x => x.ProductId == reqItem.ProductId && x.SelectedSize == reqItem.Size && x.SelectedColor == reqItem.Color);
+                        if (cartItem != null)
+                        {
+                            cartItemsToRemove.Add(cartItem);
+                        }
+                    }
                 }
 
-                // Calculate totals
-                var shipping = subtotal >= 500000 ? 0 : 30000; // Free shipping for orders over 500k
-                var tax = 0; // 0% tax for now
+                // Tính phí ship, thuế, tổng tiền
+                var shipping = subtotal >= 500000 ? 0 : 30000;
+                var tax = 0;
                 var total = subtotal + shipping + tax;
 
-                // Create order
+                // Validate dữ liệu đầu vào
+                if (string.IsNullOrWhiteSpace(request.ShippingInfo?.Name) ||
+                    string.IsNullOrWhiteSpace(request.ShippingInfo?.Phone) ||
+                    string.IsNullOrWhiteSpace(request.ShippingInfo?.Address))
+                {
+                    return ApiResponse<OrderDto>.ErrorResult("Thông tin giao nhận không hợp lệ");
+                }
+                if (string.IsNullOrWhiteSpace(request.PaymentMethod) ||
+                    !(request.PaymentMethod == "COD" || request.PaymentMethod == "MoMo" || request.PaymentMethod == "VNPay"))
+                {
+                    return ApiResponse<OrderDto>.ErrorResult("Phương thức thanh toán không hợp lệ");
+                }
+
+                // Tạo đơn hàng
                 var order = new Order
                 {
                     UserId = request.UserId,
@@ -106,20 +157,43 @@ namespace be_lecas.Services
                             Description = "Đơn hàng đã được tạo",
                             Time = DateTime.UtcNow
                         }
+                    },
+                    History = new List<OrderHistory>
+                    {
+                        new OrderHistory
+                        {
+                            Status = "pending",
+                            ChangedBy = request.UserId,
+                            Note = "Tạo đơn hàng",
+                            ChangedAt = DateTime.UtcNow
+                        }
                     }
                 };
 
                 var createdOrder = await _orderRepository.CreateAsync(order);
 
-                // Clear cart after successful order creation
-                cart.Items.Clear();
-                await _cartRepository.UpdateAsync(cart);
+                // Xóa các sản phẩm đã đặt khỏi giỏ hàng
+                if (cart != null && cartItemsToRemove.Any())
+                {
+                    foreach (var item in cartItemsToRemove)
+                    {
+                        cart.Items.Remove(item);
+                    }
+                    await _cartRepository.UpdateAsync(cart);
+                }
 
-                // Send confirmation email
+                // Gửi email xác nhận đơn hàng
                 await _emailService.SendOrderConfirmationAsync(
                     request.ShippingInfo.Name, // TODO: Get user email
                     createdOrder.OrderNumber,
                     total
+                );
+                // Gửi email thông báo trạng thái đơn hàng (tạo mới)
+                await _emailService.SendOrderStatusUpdateAsync(
+                    request.ShippingInfo.Name, // TODO: Get user email
+                    createdOrder.OrderNumber,
+                    "pending",
+                    "Đơn hàng của bạn đã được tạo thành công."
                 );
 
                 var orderDto = _mapper.Map<OrderDto>(createdOrder);
@@ -131,13 +205,24 @@ namespace be_lecas.Services
             }
         }
 
-        public async Task<ApiResponse<List<OrderDto>>> GetUserOrdersAsync(string userId)
+        public async Task<ApiResponse<List<OrderDto>>> GetUserOrdersAsync(string userId, string? status = null, DateTime? fromDate = null, DateTime? toDate = null)
         {
             try
             {
                 var orders = await _orderRepository.GetByUserIdAsync(userId);
+                if (!string.IsNullOrEmpty(status))
+                {
+                    orders = orders.Where(o => o.Status.ToString().Equals(status, StringComparison.OrdinalIgnoreCase)).ToList();
+                }
+                if (fromDate.HasValue)
+                {
+                    orders = orders.Where(o => o.CreatedAt >= fromDate.Value).ToList();
+                }
+                if (toDate.HasValue)
+                {
+                    orders = orders.Where(o => o.CreatedAt <= toDate.Value).ToList();
+                }
                 var orderDtos = _mapper.Map<List<OrderDto>>(orders);
-
                 return ApiResponse<List<OrderDto>>.SuccessResult(orderDtos, "Orders retrieved successfully");
             }
             catch (Exception ex)
@@ -164,6 +249,15 @@ namespace be_lecas.Services
 
                 var orderDto = _mapper.Map<OrderDto>(order);
                 orderDto.CanReview = order.Status == OrderStatus.Delivered;
+                // Set canReview cho từng sản phẩm
+                if (order.Status == OrderStatus.Delivered)
+                {
+                    foreach (var item in orderDto.Items)
+                    {
+                        // Giả sử có hàm kiểm tra đã review chưa (cần bổ sung logic thực tế)
+                        item.CanReview = !await HasUserReviewedProductInOrder(userId, item.ProductId, order.Id);
+                    }
+                }
 
                 return ApiResponse<OrderDto?>.SuccessResult(orderDto, "Order retrieved successfully");
             }
@@ -173,7 +267,15 @@ namespace be_lecas.Services
             }
         }
 
-        public async Task<ApiResponse<bool>> CancelOrderAsync(string orderId, string userId)
+        // Hàm kiểm tra user đã review sản phẩm này trong đơn này chưa
+        private async Task<bool> HasUserReviewedProductInOrder(string userId, string productId, string orderId)
+        {
+            // TODO: Thực hiện truy vấn thực tế tới review repository
+            // Giả lập: luôn trả về false (chưa review)
+            return false;
+        }
+
+        public async Task<ApiResponse<bool>> CancelOrderAsync(string orderId, string userId, string? reason = null)
         {
             try
             {
@@ -204,8 +306,24 @@ namespace be_lecas.Services
                     Description = "Đơn hàng đã được hủy",
                     Time = DateTime.UtcNow
                 });
+                order.History.Add(new OrderHistory
+                {
+                    Status = "cancelled",
+                    ChangedBy = userId,
+                    Note = reason ?? "User cancelled order",
+                    ChangedAt = DateTime.UtcNow
+                });
+                order.CancelReason = reason ?? "User cancelled order";
 
                 await _orderRepository.UpdateAsync(order);
+
+                // Gửi email thông báo trạng thái đơn hàng (hủy)
+                await _emailService.SendOrderStatusUpdateAsync(
+                    order.ShippingInfo.Name, // TODO: Get user email
+                    order.OrderNumber,
+                    "cancelled",
+                    "Đơn hàng của bạn đã bị hủy."
+                );
 
                 return ApiResponse<bool>.SuccessResult(true, "Order cancelled successfully");
             }
@@ -235,6 +353,12 @@ namespace be_lecas.Services
                 if (order.Status != OrderStatus.Delivered)
                 {
                     return ApiResponse<ReviewDto>.ErrorResult("Order must be delivered before reviewing");
+                }
+
+                // Kiểm tra user đã review sản phẩm này trong đơn này chưa
+                if (await HasUserReviewedProductInOrder(userId, request.ProductId, orderId))
+                {
+                    return ApiResponse<ReviewDto>.ErrorResult("You have already reviewed this product in this order");
                 }
 
                 // TODO: Implement review creation
@@ -311,11 +435,62 @@ namespace be_lecas.Services
                 var updatedOrder = await _orderRepository.UpdateAsync(order);
                 var orderDto = _mapper.Map<OrderDto>(updatedOrder);
 
+                // Gửi email thông báo trạng thái đơn hàng (hủy)
+                await _emailService.SendOrderStatusUpdateAsync(
+                    order.ShippingInfo.Name, // TODO: Get user email
+                    order.OrderNumber,
+                    "cancelled",
+                    "Đơn hàng của bạn đã bị hủy."
+                );
+
                 return ApiResponse<OrderDto?>.SuccessResult(orderDto, "Order status updated successfully");
             }
             catch (Exception ex)
             {
                 return ApiResponse<OrderDto?>.ErrorResult($"Failed to update order status: {ex.Message}");
+            }
+        }
+
+        public async Task<ApiResponse> UpdateOrderInfoAsync(string orderId, string userId, UpdateOrderRequest request)
+        {
+            try
+            {
+                var order = await _orderRepository.GetByIdAsync(orderId);
+                if (order == null)
+                {
+                    return ApiResponse.ErrorResult("Order not found");
+                }
+                if (order.UserId != userId)
+                {
+                    return ApiResponse.ErrorResult("Access denied");
+                }
+                if (order.Status != OrderStatus.Pending)
+                {
+                    return ApiResponse.ErrorResult("Order cannot be updated at this stage");
+                }
+                // Cập nhật các trường cho phép
+                if (request.ShippingInfo != null)
+                {
+                    order.ShippingInfo = _mapper.Map<ShippingInfo>(request.ShippingInfo);
+                }
+                if (!string.IsNullOrWhiteSpace(request.Note))
+                {
+                    order.Note = request.Note;
+                }
+                order.UpdatedAt = DateTime.UtcNow;
+                order.History.Add(new OrderHistory
+                {
+                    Status = order.Status.ToString(),
+                    ChangedBy = userId,
+                    Note = "User updated order info",
+                    ChangedAt = DateTime.UtcNow
+                });
+                await _orderRepository.UpdateAsync(order);
+                return ApiResponse.SuccessResult(null, "Order info updated successfully");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse.ErrorResult($"Failed to update order info: {ex.Message}");
             }
         }
     }

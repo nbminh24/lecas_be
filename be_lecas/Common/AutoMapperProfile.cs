@@ -58,7 +58,11 @@ namespace be_lecas.Common
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             
             // Order mappings
-            CreateMap<Order, OrderDto>();
+            CreateMap<Order, OrderDto>()
+                .ForMember(dest => dest.Metadata, opt => opt.MapFrom(src => src.Metadata))
+                .ForMember(dest => dest.CancelReason, opt => opt.MapFrom(src => src.CancelReason))
+                .ForMember(dest => dest.History, opt => opt.MapFrom(src => src.History));
+            CreateMap<OrderHistory, OrderHistoryDto>().ReverseMap();
             CreateMap<CreateOrderRequest, Order>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow))

@@ -12,6 +12,7 @@ using AutoMapper;
 using FluentValidation.AspNetCore;
 using FluentValidation;
 using System.Security.Claims;
+using Microsoft.AspNetCore.ResponseCompression;
 
 var builder = WebApplication.CreateBuilder(args);
 

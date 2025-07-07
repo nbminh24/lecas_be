@@ -22,6 +22,9 @@ namespace be_lecas.DTOs
         public DateTime UpdatedAt { get; set; }
         public bool CanReview { get; set; }
         public UserDto? User { get; set; }
+        public Dictionary<string, object>? Metadata { get; set; }
+        public string? CancelReason { get; set; }
+        public List<OrderHistoryDto>? History { get; set; } = new List<OrderHistoryDto>();
     }
 
     public class OrderItemDto
@@ -36,6 +39,7 @@ namespace be_lecas.DTOs
         public decimal Price { get; set; }
         public decimal TotalPrice { get; set; }
         public ProductDto? Product { get; set; }
+        public bool CanReview { get; set; } = false;
     }
 
     public class ShippingInfoDto
@@ -97,6 +101,14 @@ namespace be_lecas.DTOs
         public string? PaymentId { get; set; }
         public ShippingInfoDto? ShippingInfo { get; set; }
         public string? Note { get; set; }
+    }
+
+    public class OrderHistoryDto
+    {
+        public string Status { get; set; } = string.Empty;
+        public string ChangedBy { get; set; } = string.Empty;
+        public string? Note { get; set; }
+        public DateTime ChangedAt { get; set; }
     }
 }
 

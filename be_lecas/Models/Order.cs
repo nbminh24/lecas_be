@@ -25,6 +25,9 @@ namespace be_lecas.Models
         public string? Note { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+        public Dictionary<string, object>? Metadata { get; set; }
+        public string? CancelReason { get; set; }
+        public List<OrderHistory>? History { get; set; } = new List<OrderHistory>();
 
         // Navigation properties
         [BsonIgnore]
@@ -63,6 +66,14 @@ namespace be_lecas.Models
         public string Location { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public DateTime Time { get; set; } = DateTime.UtcNow;
+    }
+
+    public class OrderHistory
+    {
+        public string Status { get; set; } = string.Empty;
+        public string ChangedBy { get; set; } = string.Empty;
+        public string? Note { get; set; }
+        public DateTime ChangedAt { get; set; }
     }
 
     public enum OrderStatus

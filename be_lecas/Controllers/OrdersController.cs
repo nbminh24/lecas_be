@@ -45,7 +45,7 @@ namespace be_lecas.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<ApiResponse<List<OrderDto>>>> GetOrders()
+        public async Task<ActionResult<ApiResponse<List<OrderDto>>>> GetOrders([FromQuery] string? status, [FromQuery] DateTime? fromDate, [FromQuery] DateTime? toDate)
         {
             try
             {
@@ -55,7 +55,7 @@ namespace be_lecas.Controllers
                     return Unauthorized(ApiResponse<List<OrderDto>>.ErrorResult("Invalid token"));
                 }
 
-                var result = await _orderService.GetUserOrdersAsync(userId);
+                var result = await _orderService.GetUserOrdersAsync(userId, status, fromDate, toDate);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -88,8 +88,13 @@ namespace be_lecas.Controllers
             }
         }
 
+        public class CancelOrderRequest
+        {
+            public string? Reason { get; set; }
+        }
+
         [HttpPut("{id}/cancel")]
-        public async Task<ActionResult<ApiResponse>> CancelOrder(string id)
+        public async Task<ActionResult<ApiResponse>> CancelOrder(string id, [FromBody] CancelOrderRequest request)
         {
             try
             {
@@ -99,7 +104,7 @@ namespace be_lecas.Controllers
                     return Unauthorized(ApiResponse.ErrorResult("Invalid token"));
                 }
 
-                var result = await _orderService.CancelOrderAsync(id, userId);
+                var result = await _orderService.CancelOrderAsync(id, userId, request?.Reason);
                 if (!result.Success)
                 {
                     return NotFound(result);
@@ -176,6 +181,30 @@ namespace be_lecas.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, ApiResponse<OrderDto?>.ErrorResult($"Internal server error: {ex.Message}"));
+            }
+        }
+
+        [HttpPut("{id}/update-info")]
+        public async Task<ActionResult<ApiResponse>> UpdateOrderInfo(string id, [FromBody] UpdateOrderRequest request)
+        {
+            try
+            {
+                var userId = User.FindFirst("userId")?.Value;
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized(ApiResponse.ErrorResult("Invalid token"));
+                }
+
+                var result = await _orderService.UpdateOrderInfoAsync(id, userId, request);
+                if (!result.Success)
+                {
+                    return NotFound(result);
+                }
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse.ErrorResult($"Internal server error: {ex.Message}"));
             }
         }
     }
