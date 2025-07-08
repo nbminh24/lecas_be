@@ -131,12 +131,10 @@ namespace be_lecas.Services
                 {
                     return ApiResponse<OrderDto>.ErrorResult("Thông tin giao nhận không hợp lệ");
                 }
-                if (string.IsNullOrWhiteSpace(request.PaymentMethod) ||
-                    !(request.PaymentMethod == "COD" || request.PaymentMethod == "MoMo" || request.PaymentMethod == "VNPay"))
+                if (string.IsNullOrWhiteSpace(request.PaymentMethod))
                 {
                     return ApiResponse<OrderDto>.ErrorResult("Phương thức thanh toán không hợp lệ");
                 }
-
                 // Parse payment method an toàn (không phân biệt hoa thường)
                 if (!Enum.TryParse<PaymentMethod>(request.PaymentMethod, true, out var paymentMethod))
                 {
