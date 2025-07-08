@@ -98,6 +98,8 @@ namespace be_lecas.Common
             CreateMap<Review, ReviewDto>();
             CreateMap<ShippingInfoDto, ShippingInfo>();
             CreateMap<ShippingInfo, ShippingInfoDto>();
+            CreateMap<OrderItem, OrderItemDto>();
+            CreateMap<OrderItemDto, OrderItem>();
         }
     }
 } 
