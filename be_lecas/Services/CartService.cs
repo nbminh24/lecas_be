@@ -3,6 +3,7 @@ using be_lecas.Models;
 using be_lecas.Repositories;
 using be_lecas.Common;
 using AutoMapper;
+using MongoDB.Bson;
 
 namespace be_lecas.Services
 {
@@ -105,6 +106,7 @@ namespace be_lecas.Services
                 {
                     var newItem = new CartItem
                     {
+                        Id = MongoDB.Bson.ObjectId.GenerateNewId().ToString(),
                         ProductId = request.ProductId,
                         Quantity = request.Quantity,
                         SelectedSize = request.Size,

@@ -3,6 +3,7 @@ using be_lecas.Models;
 using be_lecas.Repositories;
 using be_lecas.Common;
 using AutoMapper;
+using MongoDB.Bson;
 
 namespace be_lecas.Services
 {
@@ -82,10 +83,40 @@ namespace be_lecas.Services
             return Task.FromResult(ApiResponse.ErrorResult("Not implemented"));
         }
 
-        public Task<ApiResponse<UserDto?>> AddAddressAsync(string userId, AddressRequest request)
+        public async Task<ApiResponse<UserDto?>> AddAddressAsync(string userId, AddressRequest request)
         {
-            // TODO: Implement logic
-            return Task.FromResult(ApiResponse<UserDto?>.ErrorResult("Not implemented"));
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null)
+                return ApiResponse<UserDto?>.ErrorResult("User not found");
+
+            // Map AddressRequest sang Address (model)
+            var newAddress = new Address
+            {
+                Id = MongoDB.Bson.ObjectId.GenerateNewId().ToString(),
+                Name = request.Name,
+                Phone = request.Phone,
+                AddressLine = request.Address,
+                City = request.City,
+                District = request.District,
+                Note = request.Note,
+                IsDefault = request.IsDefault
+            };
+
+            // Nếu là địa chỉ mặc định, bỏ cờ IsDefault ở các địa chỉ khác
+            if (newAddress.IsDefault)
+            {
+                foreach (var addr in user.Addresses)
+                {
+                    addr.IsDefault = false;
+                }
+            }
+
+            user.Addresses.Add(newAddress);
+            user.UpdatedAt = DateTime.UtcNow;
+            await _userRepository.UpdateAsync(user);
+
+            var userDto = _mapper.Map<UserDto>(user);
+            return ApiResponse<UserDto?>.SuccessResult(userDto, "Address added successfully");
         }
 
         public Task<ApiResponse> RemoveAddressAsync(string userId, string addressId)

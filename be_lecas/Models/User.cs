@@ -41,6 +41,8 @@ namespace be_lecas.Models
         public bool IsActive { get; set; } = true;
         public List<string> Roles { get; set; } = new List<string> { "user" };
 
+        public List<Address> Addresses { get; set; } = new List<Address>();
+
         [BsonIgnore]
         public string FullName => $"{FirstName} {LastName}".Trim();
         
@@ -49,6 +51,20 @@ namespace be_lecas.Models
         
         [BsonIgnore]
         public bool CanLoginWithPassword => !string.IsNullOrEmpty(PasswordHash);
+    }
+
+    public class Address
+    {
+        [BsonId]
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+        public string AddressLine { get; set; } = string.Empty;
+        public string City { get; set; } = string.Empty;
+        public string District { get; set; } = string.Empty;
+        public string? Note { get; set; }
+        public bool IsDefault { get; set; } = false;
     }
 }
 
