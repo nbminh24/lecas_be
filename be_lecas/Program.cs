@@ -33,11 +33,22 @@ builder.Configuration.AddEnvironmentVariables();
 // Add services to the container.
 
 // Configure MongoDB
-builder.Services.AddSingleton<IMongoClient>(new MongoClient(builder.Configuration.GetConnectionString("MongoDB")));
+var mongoConnectionString = builder.Configuration.GetConnectionString("MongoDB");
+var mongoUrl = new MongoUrl(mongoConnectionString);
+
+var settings = MongoClientSettings.FromUrl(mongoUrl);
+settings.ServerApi = new ServerApi(ServerApiVersion.V1);
+settings.SslSettings = new SslSettings
+{
+    EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls12,
+    CheckCertificateRevocation = false
+};
+
+builder.Services.AddSingleton<IMongoClient>(new MongoClient(settings));
 builder.Services.AddTransient<IMongoDatabase>(serviceProvider =>
 {
     var client = serviceProvider.GetRequiredService<IMongoClient>();
-    return client.GetDatabase("lecas");
+    return client.GetDatabase(mongoUrl.DatabaseName ?? "lecas");
 });
 
 // Add AutoMapper

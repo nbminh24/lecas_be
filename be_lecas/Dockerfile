@@ -1,10 +1,16 @@
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
+RUN apt-get update && \
+    apt-get install -y libssl-dev ca-certificates && \
+    apt-get clean
 EXPOSE 80
 EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
+RUN apt-get update && \
+    apt-get install -y libssl-dev ca-certificates && \
+    apt-get clean
 COPY ["be_lecas.csproj", "./"]
 RUN dotnet restore "be_lecas.csproj"
 COPY . .
