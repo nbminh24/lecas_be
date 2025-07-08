@@ -137,8 +137,8 @@ namespace be_lecas.Services
                     return ApiResponse<OrderDto>.ErrorResult("Phương thức thanh toán không hợp lệ");
                 }
 
-                // Parse payment method an toàn
-                if (!Enum.TryParse<PaymentMethod>(request.PaymentMethod, out var paymentMethod))
+                // Parse payment method an toàn (không phân biệt hoa thường)
+                if (!Enum.TryParse<PaymentMethod>(request.PaymentMethod, true, out var paymentMethod))
                 {
                     return ApiResponse<OrderDto>.ErrorResult("Phương thức thanh toán không hợp lệ (enum)");
                 }
