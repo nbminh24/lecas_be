@@ -1,5 +1,6 @@
 using be_lecas.Models;
 using MongoDB.Driver;
+using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -9,8 +10,11 @@ namespace be_lecas.Repositories
     {
         private readonly IMongoCollection<Promotion> _promotions;
 
-        public PromotionRepository(IMongoDatabase database)
+        public PromotionRepository(IConfiguration configuration)
         {
+            var client = new MongoClient(configuration.GetConnectionString("MongoDB"));
+            var databaseName = configuration.GetSection("ConnectionStrings:DatabaseName").Value ?? "lecas";
+            var database = client.GetDatabase(databaseName);
             _promotions = database.GetCollection<Promotion>("Promotions");
         }
 

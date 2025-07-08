@@ -11,7 +11,8 @@ namespace be_lecas.Repositories
         public CartRepository(IConfiguration configuration)
         {
             var client = new MongoClient(configuration.GetConnectionString("MongoDB"));
-            var database = client.GetDatabase("lecas");
+            var databaseName = configuration.GetSection("ConnectionStrings:DatabaseName").Value ?? "lecas";
+            var database = client.GetDatabase(databaseName);
             _carts = database.GetCollection<Cart>("carts");
         }
 

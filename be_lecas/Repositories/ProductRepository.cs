@@ -12,7 +12,8 @@ namespace be_lecas.Repositories
         public ProductRepository(IConfiguration configuration)
         {
             var client = new MongoClient(configuration.GetConnectionString("MongoDB"));
-            var database = client.GetDatabase("lecas");
+            var databaseName = configuration.GetSection("ConnectionStrings:DatabaseName").Value ?? "lecas";
+            var database = client.GetDatabase(databaseName);
             _products = database.GetCollection<Product>("products");
         }
 
