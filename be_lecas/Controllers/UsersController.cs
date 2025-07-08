@@ -5,6 +5,7 @@ using be_lecas.Services;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
 using be_lecas.Models;
+using be_lecas.Repositories;
 
 namespace be_lecas.Controllers
 {
