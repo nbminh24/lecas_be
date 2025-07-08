@@ -69,6 +69,8 @@ namespace be_lecas.Common
                 .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => DateTime.UtcNow));
             CreateMap<UpdateOrderRequest, Order>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            CreateMap<OrderTracking, OrderTrackingDto>();
+            CreateMap<OrderTrackingDto, OrderTracking>();
             
             // Cart mappings
             CreateMap<Cart, CartDto>();
