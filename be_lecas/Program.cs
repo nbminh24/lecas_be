@@ -170,8 +170,11 @@ builder.Services.AddAuthentication(options =>
 
 // Add CORS
 var allowedOrigins = builder.Configuration.GetSection("CORS:AllowedOrigins").Get<string[]>();
-if (allowedOrigins == null)
-    throw new InvalidOperationException("CORS:AllowedOrigins is not configured");
+if (allowedOrigins == null || allowedOrigins.Length == 0)
+{
+    // Nếu không cấu hình, mặc định cho phép localhost:4200 và domain production
+    allowedOrigins = new[] { "http://localhost:4200", "https://lecas-fe.onrender.com" };
+}
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowSpecificOrigins",
