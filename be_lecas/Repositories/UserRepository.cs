@@ -11,7 +11,8 @@ namespace be_lecas.Repositories
         public UserRepository(IConfiguration configuration)
         {
             var client = new MongoClient(configuration.GetConnectionString("MongoDB"));
-            var database = client.GetDatabase("lecas");
+            var databaseName = configuration.GetSection("ConnectionStrings:DatabaseName").Value ?? "lecas";
+            var database = client.GetDatabase(databaseName);
             _users = database.GetCollection<User>("users");
         }
 
