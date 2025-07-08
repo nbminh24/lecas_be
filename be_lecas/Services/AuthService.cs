@@ -69,7 +69,7 @@ namespace be_lecas.Services
             try
             {
                 // Validate Google access token
-                var payload = await GoogleJsonWebSignature.ValidateAsync(request.AccessToken);
+                var payload = await GoogleJsonWebSignature.ValidateAsync(request.IdToken);
                 
                 var user = await _userRepository.GetByEmailAsync(payload.Email);
                 bool isNewUser = false;
