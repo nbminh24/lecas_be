@@ -38,11 +38,6 @@ var mongoUrl = new MongoUrl(mongoConnectionString);
 
 var settings = MongoClientSettings.FromUrl(mongoUrl);
 settings.ServerApi = new ServerApi(ServerApiVersion.V1);
-settings.SslSettings = new SslSettings
-{
-    EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls12,
-    CheckCertificateRevocation = false
-};
 
 builder.Services.AddSingleton<IMongoClient>(new MongoClient(settings));
 builder.Services.AddTransient<IMongoDatabase>(serviceProvider =>
