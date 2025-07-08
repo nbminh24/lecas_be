@@ -151,8 +151,10 @@ namespace be_lecas.Controllers
                 return NotFound(ApiResponse<List<Address>>.ErrorResult("User not found"));
             }
 
-            // Trả về danh sách địa chỉ (nếu null thì trả về mảng rỗng)
-            return Ok(ApiResponse<List<Address>>.SuccessResult(user.Addresses ?? new List<Address>(), "Addresses retrieved successfully"));
+            // Lấy user model để trả về danh sách địa chỉ
+            var userModel = await _userService._userRepository.GetByIdAsync(userId);
+            var addresses = userModel?.Addresses ?? new List<Address>();
+            return Ok(ApiResponse<List<Address>>.SuccessResult(addresses, "Addresses retrieved successfully"));
         }
     }
 }
