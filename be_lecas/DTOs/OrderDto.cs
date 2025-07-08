@@ -63,7 +63,7 @@ namespace be_lecas.DTOs
 
     public class CreateOrderRequest
     {
-        [Required]
+        // [Required] // Bỏ required vì controller sẽ tự gán
         public string UserId { get; set; } = string.Empty;
         public List<CreateOrderItemRequest> Items { get; set; } = new List<CreateOrderItemRequest>();
         public ShippingInfoDto ShippingInfo { get; set; } = new ShippingInfoDto();
