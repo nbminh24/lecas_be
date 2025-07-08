@@ -4,6 +4,7 @@ using be_lecas.DTOs;
 using be_lecas.Services;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+using be_lecas.Models;
 
 namespace be_lecas.Controllers
 {
