@@ -24,7 +24,7 @@ namespace be_lecas.Controllers
             {
                 // Test MongoDB connection
                 var database = _mongoClient.GetDatabase("lecas");
-                await database.RunCommandAsync(new MongoDB.Bson.BsonDocument("ping", 1));
+                await database.RunCommandAsync<MongoDB.Bson.BsonDocument>(new MongoDB.Bson.BsonDocument("ping", 1));
                 
                 return Ok(new
                 {
@@ -73,7 +73,7 @@ namespace be_lecas.Controllers
             {
                 // Test MongoDB connection
                 var database = _mongoClient.GetDatabase("lecas");
-                await database.RunCommandAsync(new MongoDB.Bson.BsonDocument("ping", 1));
+                await database.RunCommandAsync<MongoDB.Bson.BsonDocument>(new MongoDB.Bson.BsonDocument("ping", 1));
                 
                 return Ok(new
                 {

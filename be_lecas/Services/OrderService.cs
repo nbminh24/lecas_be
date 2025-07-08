@@ -439,12 +439,12 @@ namespace be_lecas.Services
                 var updatedOrder = await _orderRepository.UpdateAsync(order);
                 var orderDto = _mapper.Map<OrderDto>(updatedOrder);
 
-                // Gửi email thông báo trạng thái đơn hàng (hủy)
+                // Gửi email thông báo trạng thái đơn hàng (cập nhật)
                 await _emailService.SendOrderStatusUpdateAsync(
                     order.ShippingInfo?.Name ?? "Customer", // TODO: Get user email
                     order.OrderNumber,
-                    "cancelled",
-                    "Đơn hàng của bạn đã bị hủy."
+                    request.Status.ToLower(),
+                    $"Đơn hàng của bạn đã được cập nhật: {request.Status}"
                 );
 
                 return ApiResponse<OrderDto?>.SuccessResult(orderDto, "Order status updated successfully");
