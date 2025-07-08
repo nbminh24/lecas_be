@@ -134,6 +134,25 @@ namespace be_lecas.Controllers
                 return StatusCode(500, ApiResponse.ErrorResult($"Internal server error: {ex.Message}"));
             }
         }
+
+        [HttpGet("addresses")]
+        public async Task<ActionResult<ApiResponse<List<Address>>>> GetAddresses()
+        {
+            var userId = User.FindFirst("userId")?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(ApiResponse<List<Address>>.ErrorResult("Invalid token"));
+            }
+
+            var user = await _userService.GetUserByIdAsync(userId);
+            if (user == null)
+            {
+                return NotFound(ApiResponse<List<Address>>.ErrorResult("User not found"));
+            }
+
+            // Trả về danh sách địa chỉ (nếu null thì trả về mảng rỗng)
+            return Ok(ApiResponse<List<Address>>.SuccessResult(user.Addresses ?? new List<Address>(), "Addresses retrieved successfully"));
+        }
     }
 }
 
