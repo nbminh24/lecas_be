@@ -137,6 +137,12 @@ namespace be_lecas.Services
                     return ApiResponse<OrderDto>.ErrorResult("Phương thức thanh toán không hợp lệ");
                 }
 
+                // Parse payment method an toàn
+                if (!Enum.TryParse<PaymentMethod>(request.PaymentMethod, out var paymentMethod))
+                {
+                    return ApiResponse<OrderDto>.ErrorResult("Phương thức thanh toán không hợp lệ (enum)");
+                }
+
                 // Tạo đơn hàng
                 var order = new Order
                 {
@@ -146,7 +152,7 @@ namespace be_lecas.Services
                     Shipping = shipping,
                     Tax = tax,
                     Total = total,
-                    PaymentMethod = Enum.Parse<PaymentMethod>(request.PaymentMethod),
+                    PaymentMethod = paymentMethod,
                     ShippingInfo = _mapper.Map<ShippingInfo>(request.ShippingInfo),
                     Items = orderItems,
                     Note = request.Note,
