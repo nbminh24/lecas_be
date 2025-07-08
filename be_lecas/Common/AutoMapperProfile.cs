@@ -96,6 +96,7 @@ namespace be_lecas.Common
             
             // Review mappings
             CreateMap<Review, ReviewDto>();
+            CreateMap<ShippingInfoDto, ShippingInfo>();
         }
     }
 } 
