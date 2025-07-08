@@ -14,10 +14,12 @@ namespace be_lecas.Controllers
     public class UsersController : ControllerBase
     {
         private readonly IUserService _userService;
+        private readonly IUserRepository _userRepository;
 
-        public UsersController(IUserService userService)
+        public UsersController(IUserService userService, IUserRepository userRepository)
         {
             _userService = userService;
+            _userRepository = userRepository;
         }
 
         [HttpGet("profile")]
@@ -152,7 +154,7 @@ namespace be_lecas.Controllers
             }
 
             // Lấy user model để trả về danh sách địa chỉ
-            var userModel = await _userService._userRepository.GetByIdAsync(userId);
+            var userModel = await _userRepository.GetByIdAsync(userId);
             var addresses = userModel?.Addresses ?? new List<Address>();
             return Ok(ApiResponse<List<Address>>.SuccessResult(addresses, "Addresses retrieved successfully"));
         }
