@@ -67,6 +67,10 @@ namespace be_lecas.Services
                 foreach (var reqItem in request.Items)
                 {
                     var product = await _productRepository.GetByIdAsync(reqItem.ProductId);
+                    if (product == null)
+                    {
+                        return ApiResponse<OrderDto>.ErrorResult($"Product {reqItem.ProductId} not found");
+                    }
                     decimal price = product.Price;
                     // Áp dụng promotion nếu có
                     var promo = activePromotions.FirstOrDefault(p => p.ProductIds.Contains(product.Id));
@@ -190,7 +194,7 @@ namespace be_lecas.Services
                 );
                 // Gửi email thông báo trạng thái đơn hàng (tạo mới)
                 await _emailService.SendOrderStatusUpdateAsync(
-                    request.ShippingInfo.Name, // TODO: Get user email
+                    request.ShippingInfo?.Name ?? "Customer", // TODO: Get user email
                     createdOrder.OrderNumber,
                     "pending",
                     "Đơn hàng của bạn đã được tạo thành công."
@@ -268,11 +272,11 @@ namespace be_lecas.Services
         }
 
         // Hàm kiểm tra user đã review sản phẩm này trong đơn này chưa
-        private async Task<bool> HasUserReviewedProductInOrder(string userId, string productId, string orderId)
+        private Task<bool> HasUserReviewedProductInOrder(string userId, string productId, string orderId)
         {
             // TODO: Thực hiện truy vấn thực tế tới review repository
             // Giả lập: luôn trả về false (chưa review)
-            return false;
+            return Task.FromResult(false);
         }
 
         public async Task<ApiResponse<bool>> CancelOrderAsync(string orderId, string userId, string? reason = null)
@@ -319,7 +323,7 @@ namespace be_lecas.Services
 
                 // Gửi email thông báo trạng thái đơn hàng (hủy)
                 await _emailService.SendOrderStatusUpdateAsync(
-                    order.ShippingInfo.Name, // TODO: Get user email
+                    order.ShippingInfo?.Name ?? "Customer", // TODO: Get user email
                     order.OrderNumber,
                     "cancelled",
                     "Đơn hàng của bạn đã bị hủy."
@@ -437,7 +441,7 @@ namespace be_lecas.Services
 
                 // Gửi email thông báo trạng thái đơn hàng (hủy)
                 await _emailService.SendOrderStatusUpdateAsync(
-                    order.ShippingInfo.Name, // TODO: Get user email
+                    order.ShippingInfo?.Name ?? "Customer", // TODO: Get user email
                     order.OrderNumber,
                     "cancelled",
                     "Đơn hàng của bạn đã bị hủy."
@@ -486,7 +490,7 @@ namespace be_lecas.Services
                     ChangedAt = DateTime.UtcNow
                 });
                 await _orderRepository.UpdateAsync(order);
-                return ApiResponse<object>.SuccessResult(null, "Order info updated successfully");
+                return ApiResponse<object>.SuccessResult(new { }, "Order info updated successfully");
             }
             catch (Exception ex)
             {
